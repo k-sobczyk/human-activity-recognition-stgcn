@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 import matplotlib
 
@@ -10,10 +9,8 @@ matplotlib.use('TkAgg')
 
 def prepare_sequence(df: pd.DataFrame) -> np.ndarray:
     """Prepare the sequence data from DataFrame."""
-    # First, filter only the landmarks we want
     landmarks = list(get_landmark_indices().keys())
 
-    # Create list to store coordinates for each landmark
     feature_cols = []
     for landmark in landmarks:
         feature_cols.extend([f"{landmark}_x", f"{landmark}_y", f"{landmark}_z"])
@@ -95,9 +92,6 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
                     [z[start], z[end]],
                     'gray', alpha=0.3, linewidth=1)
 
-        # Plot joints
-        scatter = ax.scatter(x, y, z, c='blue', marker='o', s=50)
-
         # Add point labels
         for name, idx in landmark_indices.items():
             offset = 0.005
@@ -107,11 +101,9 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
                     fontsize=6,
                     alpha=0.7)
 
-        # Update time text
         ax.text2D(0.05, 0.95, f'Frame: {frame}/{len(sequence)}',
                   transform=ax.transAxes)
 
-        # Set labels and title
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
@@ -126,13 +118,9 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
         ax.set_zlim(np.min(sequence[:, :, 2]) - margin,
                     np.max(sequence[:, :, 2]) + margin)
 
-        # Add grid
         ax.grid(True, alpha=0.2, linestyle=':')
-
-        # Restore view angles
         ax.view_init(elev=current_elev, azim=current_azim)
 
-    # Create animation
     anim = FuncAnimation(
         fig,
         update,
@@ -142,7 +130,6 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
         repeat=True
     )
 
-    # Add rotation control
     def rotate(event):
         if event.key == 'left':
             ax.view_init(azim=ax.azim + 5)

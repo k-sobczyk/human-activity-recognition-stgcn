@@ -11,6 +11,9 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from data_loader import prepare_dataloaders
 
 
+#TODO Implement augmentation within the neural network, including rotation (add distortion?)
+#TODO Verify and visualize how the augmentation works, determine how to modify it for better results
+#TODO I believe the model might misrepresent frames where the user is preparing for exercises (should investigate this and potentially remove these frames from the dataset)
 class PoseAugmenter:
     def __init__(self, rotation_range: float = 0.1):
         self.rotation_range = rotation_range
@@ -234,7 +237,7 @@ if __name__ == "__main__":
 
     wandb.login()
 
-    df = pd.read_csv('data/data.csv')
+    df = pd.read_csv('data/data_for_model.csv')
 
     # Remap labels to start from 0
     unique_labels = df['exercise'].unique()

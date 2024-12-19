@@ -27,7 +27,7 @@ def create_sequences(
     sequences = []
     labels = []
 
-    n_landmarks: int = 8  # Updated: shoulders, elbows, wrists, and hips
+    n_landmarks: int = 8  # shoulders, elbows, wrists, and hips
     n_features: int = 3  # x, y, z coordinates
 
     feature_cols = [col for col in df.columns

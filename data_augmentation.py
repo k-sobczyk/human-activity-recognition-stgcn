@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 
 
+# NOT USED IN OUR ACTUAL IMPLEMENTATION
+#TODO Figure out methods to distort data to create a larger dataset (then we can concat original and augmented dataframes + remove the augmentation within nn)
 def augment_pose_data(df: pd.DataFrame,
                       noise_std: float = 0.005,
                       rotation_range: float = 0.1,
