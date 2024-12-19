@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional
+from typing import Tuple
 import numpy as np
 import pandas as pd
 import torch
@@ -27,7 +27,7 @@ def create_sequences(
     sequences = []
     labels = []
 
-    n_landmarks: int = 22  # Number of landmarks
+    n_landmarks: int = 8  # Updated: shoulders, elbows, wrists, and hips
     n_features: int = 3  # x, y, z coordinates
 
     feature_cols = [col for col in df.columns
