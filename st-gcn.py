@@ -3,13 +3,39 @@ import torch.nn as nn
 import wandb
 import pandas as pd
 import numpy as np
-import os
 from typing import Dict
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from data_loader import prepare_dataloaders
+
+
+class PoseAugmenter:
+    def __init__(self, rotation_range: float = 0.1):
+        self.rotation_range = rotation_range
+
+    def rotate_sequence(self, sequence: torch.Tensor) -> torch.Tensor:
+        theta = np.random.uniform(-self.rotation_range, self.rotation_range)
+        rotation_matrix = torch.tensor([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]
+        ], dtype=torch.float32)
+
+        xy_coords = sequence[..., :2]  # Get x,y coordinates
+        original_shape = xy_coords.shape
+
+        # Reshape to 2D for rotation
+        xy_coords = xy_coords.reshape(-1, 2)
+
+        # Apply rotation
+        rotated_coords = torch.matmul(xy_coords, rotation_matrix.T)
+        rotated_coords = rotated_coords.reshape(original_shape)
+
+        augmented_sequence = sequence.clone()
+        augmented_sequence[..., :2] = rotated_coords
+
+        return augmented_sequence
 
 
 class SpatialGraphConv(nn.Module):
@@ -43,18 +69,19 @@ class SpatialGraphConv(nn.Module):
 
 
 class STGCN(nn.Module):
-    """Implementation of Spatial Temporal Graph Convolutional Network."""
-
     def __init__(
             self,
             in_channels: int = 3,
             num_class: int = 17,
             hidden_channels: int = 64,
-            graph_nodes: int = 22
+            graph_nodes: int = 8,
+            use_augmentation: bool = True
     ):
         super(STGCN, self).__init__()
 
-        # Initial convolution with batch norm and dropout
+        self.use_augmentation = use_augmentation
+        self.augmenter = PoseAugmenter() if use_augmentation else None
+
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, hidden_channels, kernel_size=1),
             nn.BatchNorm2d(hidden_channels),
@@ -69,7 +96,6 @@ class STGCN(nn.Module):
             graph_nodes
         )
 
-        # Final classifier
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
@@ -78,6 +104,10 @@ class STGCN(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Apply augmentation during training only
+        if self.training and self.use_augmentation:
+            x = self.augmenter.rotate_sequence(x)
+
         N, T, V, C = x.size()
         x = x.permute(0, 3, 1, 2)  # (N, C, T, V)
 
@@ -190,7 +220,6 @@ def train_model(
             print(f"Early stopping triggered after {epoch + 1} epochs")
             break
 
-        # Print only essential information
         print(f'Epoch [{epoch + 1}/{config["epochs"]}] - LR: {current_lr:.6f}')
         print(f'Train Loss: {train_loss / len(train_loader):.4f} | Accuracy: {train_accuracy:.4f}')
         print(f'Val Loss: {val_loss / len(val_loader):.4f} | Accuracy: {val_accuracy:.4f}')
@@ -206,7 +235,16 @@ if __name__ == "__main__":
     wandb.login()
 
     df = pd.read_csv('data/data.csv')
-    print(f"Unique exercise labels in dataset: {df['exercise'].unique()}")
+
+    # Remap labels to start from 0
+    unique_labels = df['exercise'].unique()
+    label_map = {label: idx for idx, label in enumerate(sorted(unique_labels))}
+    df['exercise'] = df['exercise'].map(label_map)
+
+    num_classes = len(unique_labels)
+    print(f"Original exercise labels: {sorted(unique_labels)}")
+    print(f"Number of classes: {num_classes}")
+    print(f"Label mapping: {label_map}")
 
     train_loader, val_loader = prepare_dataloaders(
         df=df,
@@ -221,14 +259,16 @@ if __name__ == "__main__":
         'hidden_channels': 64,
         'learning_rate': 0.001,
         'batch_size': 32,
-        'epochs': 100
+        'epochs': 100,
+        'use_augmentation': True
     }
 
     model = STGCN(
         in_channels=3,
-        num_class=17,
+        num_class=num_classes,
         hidden_channels=config['hidden_channels'],
-        graph_nodes=22
+        graph_nodes=8,
+        use_augmentation=config['use_augmentation']
     )
 
     train_model(
