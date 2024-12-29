@@ -11,12 +11,16 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from data_loader import prepare_dataloaders
 
 
-#TODO Implement augmentation within the neural network, including rotation (add distortion?)
 #TODO Verify and visualize how the augmentation works, determine how to modify it for better results
 #TODO I believe the model might misrepresent frames where the user is preparing for exercises (should investigate this and potentially remove these frames from the dataset)
 class PoseAugmenter:
-    def __init__(self, rotation_range: float = 0.1):
+    def __init__(self, rotation_range: float = 0.1, noise_scale_factor: float = 0.005):
         self.rotation_range = rotation_range
+        self.noise_scale_factor = noise_scale_factor
+
+    def run(self, sequence):
+        sequence = self.rotate_sequence(sequence)
+        return self.distort_sequence(sequence)
 
     def rotate_sequence(self, sequence: torch.Tensor) -> torch.Tensor:
         theta = np.random.uniform(-self.rotation_range, self.rotation_range)
@@ -39,6 +43,9 @@ class PoseAugmenter:
         augmented_sequence[..., :2] = rotated_coords
 
         return augmented_sequence
+
+    def distort_sequence(self, sequence: torch.Tensor):
+        return sequence + torch.randn(sequence.size()) * self.noise_scale_factor
 
 
 class SpatialGraphConv(nn.Module):
@@ -109,7 +116,7 @@ class STGCN(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply augmentation during training only
         if self.training and self.use_augmentation:
-            x = self.augmenter.rotate_sequence(x)
+            x = self.augmenter.run(x)
 
         N, T, V, C = x.size()
         x = x.permute(0, 3, 1, 2)  # (N, C, T, V)
@@ -230,8 +237,7 @@ def train_model(
 
     wandb.finish()
 
-
-if __name__ == "__main__":
+def run_training():
     torch.manual_seed(42)
     np.random.seed(42)
 
@@ -281,3 +287,8 @@ if __name__ == "__main__":
         config=config,
         device='cpu'
     )
+    
+
+
+if __name__ == "__main__":
+    run_training()
