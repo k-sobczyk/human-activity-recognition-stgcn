@@ -11,7 +11,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from data_loader import prepare_dataloaders
 
 
-#TODO Verify and visualize how the augmentation works, determine how to modify it for better results
 #TODO I believe the model might misrepresent frames where the user is preparing for exercises (should investigate this and potentially remove these frames from the dataset)
 class PoseAugmenter:
     def __init__(self, rotation_range: float = 0.1, noise_scale_factor: float = 0.005):
