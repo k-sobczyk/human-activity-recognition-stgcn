@@ -47,6 +47,14 @@ class PoseAugmenter:
     def distort_sequence(self, sequence: torch.Tensor):
         return sequence + torch.randn(sequence.size()) * self.noise_scale_factor
 
+    def horizontal_flip(self, sequence: torch.Tensor):
+        out = sequence.detach().clone()
+        out[..., 0] = 1 - out[..., 0]
+        return out
+
+    def horizontal_flip_prob(self, sequence: torch.Tensor, prob: float = 0.5):
+        return self.horizontal_flip(sequence) if np.random.uniform(0, 1) < prob else sequence
+
 
 class SpatialGraphConv(nn.Module):
     """Spatial Graph Convolution layer."""
