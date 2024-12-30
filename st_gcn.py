@@ -22,7 +22,8 @@ class PoseAugmenter:
         if run_horizontal_flip:
             sequence = self.horizontal_flip_prob(sequence)
         sequence = self.rotate_sequence(sequence)
-        return self.distort_sequence(sequence)
+        sequence = self.distort_sequence(sequence)
+        return sequence
 
     def rotate_sequence(self, sequence: torch.Tensor) -> torch.Tensor:
         theta = np.random.uniform(-self.rotation_range, self.rotation_range)
@@ -54,7 +55,7 @@ class PoseAugmenter:
         out[..., 0] = 1 - out[..., 0]
         return out
 
-    def horizontal_flip_prob(self, sequence: torch.Tensor, prob: float = 0.5):
+    def horizontal_flip_prob(self, sequence: torch.Tensor, prob: float = 0.1):
         return self.horizontal_flip(sequence) if np.random.uniform(0, 1) < prob else sequence
 
 
@@ -93,7 +94,8 @@ class STGCN(nn.Module):
             self,
             in_channels: int = 3,
             num_class: int = 17,
-            hidden_channels: int = 64,
+            num_stgcn_blocks: int = 2,
+            hidden_channels: int = 32,
             graph_nodes: int = 8,
             use_augmentation: bool = True
     ):
@@ -102,25 +104,39 @@ class STGCN(nn.Module):
         self.use_augmentation = use_augmentation
         self.augmenter = PoseAugmenter() if use_augmentation else None
 
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, hidden_channels, kernel_size=1),
-            nn.BatchNorm2d(hidden_channels),
-            nn.ReLU(),
-            nn.Dropout(p=0.2)
-        )
+        conv_blocks = []
+        spatial_conv_blocks = []
 
-        # Spatial Graph Convolution
-        self.spatial_conv = SpatialGraphConv(
-            hidden_channels,
-            hidden_channels * 2,
-            graph_nodes
-        )
+        curr_layer_in_channels = in_channels
+        curr_layer_out_channels = hidden_channels
+        for _ in range(num_stgcn_blocks):
+            conv = nn.Sequential(
+                nn.Conv2d(curr_layer_in_channels, curr_layer_out_channels, kernel_size=1),
+                nn.BatchNorm2d(curr_layer_out_channels),
+                nn.ReLU(),
+                nn.Dropout(p=0.2)
+            )
+            conv_blocks.append(conv)
+
+            # Spatial Graph Convolution
+            spatial_conv = SpatialGraphConv(
+                curr_layer_out_channels,
+                curr_layer_out_channels * 2,
+                graph_nodes
+            )
+            spatial_conv_blocks.append(spatial_conv)
+
+            curr_layer_in_channels = curr_layer_out_channels * 2
+            curr_layer_out_channels = curr_layer_in_channels * 2
+        self.conv_blocks = nn.ModuleList(conv_blocks)
+        self.spatial_conv_blocks = nn.ModuleList(spatial_conv_blocks)
+
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Dropout(p=0.5),
-            nn.Linear(hidden_channels * 2, num_class)
+            nn.Linear(curr_layer_in_channels, num_class),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -131,8 +147,9 @@ class STGCN(nn.Module):
         N, T, V, C = x.size()
         x = x.permute(0, 3, 1, 2)  # (N, C, T, V)
 
-        x = self.conv1(x)
-        x = self.spatial_conv(x)
+        for conv, spatial_conv in zip(self.conv_blocks, self.spatial_conv_blocks):
+            x = conv(x)
+            x = spatial_conv(x)
         out = self.classifier(x)
 
         return out
@@ -297,6 +314,8 @@ def run_training():
         config=config,
         device='cpu'
     )
+
+    return model
     
 
 
