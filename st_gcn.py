@@ -18,7 +18,9 @@ class PoseAugmenter:
         self.rotation_range = rotation_range
         self.noise_scale_factor = noise_scale_factor
 
-    def run(self, sequence):
+    def run(self, sequence, run_horizontal_flip: bool = False):
+        if run_horizontal_flip:
+            sequence = self.horizontal_flip_prob(sequence)
         sequence = self.rotate_sequence(sequence)
         return self.distort_sequence(sequence)
 
