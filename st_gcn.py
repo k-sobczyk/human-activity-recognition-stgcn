@@ -11,12 +11,18 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from data_loader import prepare_dataloaders
 
 
-#TODO Implement augmentation within the neural network, including rotation (add distortion?)
-#TODO Verify and visualize how the augmentation works, determine how to modify it for better results
 #TODO I believe the model might misrepresent frames where the user is preparing for exercises (should investigate this and potentially remove these frames from the dataset)
 class PoseAugmenter:
-    def __init__(self, rotation_range: float = 0.1):
+    def __init__(self, rotation_range: float = 0.1, noise_scale_factor: float = 0.005):
         self.rotation_range = rotation_range
+        self.noise_scale_factor = noise_scale_factor
+
+    def run(self, sequence, run_horizontal_flip: bool = False):
+        if run_horizontal_flip:
+            sequence = self.horizontal_flip_prob(sequence)
+        sequence = self.rotate_sequence(sequence)
+        sequence = self.distort_sequence(sequence)
+        return sequence
 
     def rotate_sequence(self, sequence: torch.Tensor) -> torch.Tensor:
         theta = np.random.uniform(-self.rotation_range, self.rotation_range)
@@ -39,6 +45,17 @@ class PoseAugmenter:
         augmented_sequence[..., :2] = rotated_coords
 
         return augmented_sequence
+
+    def distort_sequence(self, sequence: torch.Tensor):
+        return sequence + torch.randn(sequence.size()) * self.noise_scale_factor
+
+    def horizontal_flip(self, sequence: torch.Tensor):
+        out = sequence.detach().clone()
+        out[..., 0] = 1 - out[..., 0]
+        return out
+
+    def horizontal_flip_prob(self, sequence: torch.Tensor, prob: float = 0.1):
+        return self.horizontal_flip(sequence) if np.random.uniform(0, 1) < prob else sequence
 
 
 class SpatialGraphConv(nn.Module):
@@ -76,7 +93,8 @@ class STGCN(nn.Module):
             self,
             in_channels: int = 3,
             num_class: int = 17,
-            hidden_channels: int = 64,
+            num_stgcn_blocks: int = 2,
+            hidden_channels: int = 32,
             graph_nodes: int = 8,
             use_augmentation: bool = True
     ):
@@ -85,37 +103,52 @@ class STGCN(nn.Module):
         self.use_augmentation = use_augmentation
         self.augmenter = PoseAugmenter() if use_augmentation else None
 
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, hidden_channels, kernel_size=1),
-            nn.BatchNorm2d(hidden_channels),
-            nn.ReLU(),
-            nn.Dropout(p=0.2)
-        )
+        conv_blocks = []
+        spatial_conv_blocks = []
 
-        # Spatial Graph Convolution
-        self.spatial_conv = SpatialGraphConv(
-            hidden_channels,
-            hidden_channels * 2,
-            graph_nodes
-        )
+        curr_layer_in_channels = in_channels
+        curr_layer_out_channels = hidden_channels
+        for _ in range(num_stgcn_blocks):
+            conv = nn.Sequential(
+                nn.Conv2d(curr_layer_in_channels, curr_layer_out_channels, kernel_size=1),
+                nn.BatchNorm2d(curr_layer_out_channels),
+                nn.ReLU(),
+                nn.Dropout(p=0.2)
+            )
+            conv_blocks.append(conv)
+
+            # Spatial Graph Convolution
+            spatial_conv = SpatialGraphConv(
+                curr_layer_out_channels,
+                curr_layer_out_channels * 2,
+                graph_nodes
+            )
+            spatial_conv_blocks.append(spatial_conv)
+
+            curr_layer_in_channels = curr_layer_out_channels * 2
+            curr_layer_out_channels = curr_layer_in_channels * 2
+        self.conv_blocks = nn.ModuleList(conv_blocks)
+        self.spatial_conv_blocks = nn.ModuleList(spatial_conv_blocks)
+
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Dropout(p=0.5),
-            nn.Linear(hidden_channels * 2, num_class)
+            nn.Linear(curr_layer_in_channels, num_class),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Apply augmentation during training only
         if self.training and self.use_augmentation:
-            x = self.augmenter.rotate_sequence(x)
+            x = self.augmenter.run(x)
 
         N, T, V, C = x.size()
         x = x.permute(0, 3, 1, 2)  # (N, C, T, V)
 
-        x = self.conv1(x)
-        x = self.spatial_conv(x)
+        for conv, spatial_conv in zip(self.conv_blocks, self.spatial_conv_blocks):
+            x = conv(x)
+            x = spatial_conv(x)
         out = self.classifier(x)
 
         return out
@@ -230,8 +263,7 @@ def train_model(
 
     wandb.finish()
 
-
-if __name__ == "__main__":
+def run_training():
     torch.manual_seed(42)
     np.random.seed(42)
 
@@ -281,3 +313,10 @@ if __name__ == "__main__":
         config=config,
         device='cpu'
     )
+
+    return model
+    
+
+
+if __name__ == "__main__":
+    run_training()
