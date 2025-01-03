@@ -74,7 +74,7 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
     ax = fig.add_subplot(111, projection='3d')
 
     # Set initial view angle
-    ax.view_init(elev=20, azim=45)
+    ax.view_init(elev=-80, azim=-90)
 
     def update(frame):
         """Update animation frame."""
@@ -144,7 +144,7 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
         elif event.key == 'down':
             ax.view_init(elev=ax.elev - 5)
         elif event.key == 'r':
-            ax.view_init(elev=20, azim=45)
+            ax.view_init(elev=-80, azim=-90)
 
     fig.canvas.mpl_connect('key_press_event', rotate)
 
@@ -176,6 +176,7 @@ def plot_sequence(sequence: torch.Tensor, title):
         nx.draw(graph, pos, ax=ax, node_size=10, node_color='skyblue', font_size=2)
         ax.set_title(f"Frame {i + 1}")
     fig.tight_layout()
+    fig.subplots_adjust(top=0.94)
     fig.suptitle(title, fontsize=12)
     fig.show()
 
