@@ -1,11 +1,12 @@
-import torch
+from math import ceil
+
+import matplotlib
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import torch
 from matplotlib.animation import FuncAnimation
-import matplotlib
-import networkx as nx
-from math import ceil
 
 matplotlib.use('TkAgg')
 
@@ -154,24 +155,26 @@ def create_3d_visualization(csv_path: str, frames_to_use: int = 100):
 
     plt.show()
 
+
 def create_graph(pose: torch.Tensor):
     g = nx.Graph()
     for i in range(len(pose)):
         g.add_node(i)
-    pos = {i:(1 - xy[0], 1 - xy[1]) for i, xy in enumerate(pose)}
+    pos = {i: (1 - xy[0], 1 - xy[1]) for i, xy in enumerate(pose)}
 
     for e1, e2 in get_connected_joints():
         g.add_edge(e1, e2)
 
     return g, pos
 
+
 def plot_sequence(sequence: torch.Tensor, title):
     fig, axes = plt.subplots(ceil(sequence.shape[0] / 4), 4, figsize=(15, 15))
     for i, frame in enumerate(sequence):
         ax = axes[i // 4, i % 4]
         graph, pos = create_graph(frame)
-        nx.draw(graph, pos, ax = ax, node_size=10, node_color='skyblue', font_size=2)
-        ax.set_title(f"Frame {i+1}")
+        nx.draw(graph, pos, ax=ax, node_size=10, node_color='skyblue', font_size=2)
+        ax.set_title(f"Frame {i + 1}")
     fig.tight_layout()
     fig.suptitle(title, fontsize=12)
     fig.show()

@@ -1,12 +1,13 @@
+from datetime import datetime
+from typing import Dict
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import wandb
-import pandas as pd
-import numpy as np
-from typing import Dict
-from datetime import datetime
-from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
 
 from data_loader import prepare_dataloaders
 
@@ -129,7 +130,6 @@ class STGCN(nn.Module):
             curr_layer_out_channels = curr_layer_in_channels * 2
         self.conv_blocks = nn.ModuleList(conv_blocks)
         self.spatial_conv_blocks = nn.ModuleList(spatial_conv_blocks)
-
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
@@ -263,6 +263,7 @@ def train_model(
 
     wandb.finish()
 
+
 def run_training():
     torch.manual_seed(42)
     np.random.seed(42)
@@ -315,7 +316,6 @@ def run_training():
     )
 
     return model
-    
 
 
 if __name__ == "__main__":

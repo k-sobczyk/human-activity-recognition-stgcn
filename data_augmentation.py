@@ -1,6 +1,7 @@
-from data_viz_3d import create_3d_visualization
 import numpy as np
 import pandas as pd
+
+from data_viz_3d import create_3d_visualization
 
 
 # NOT USED IN OUR ACTUAL IMPLEMENTATION
