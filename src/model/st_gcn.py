@@ -83,77 +83,51 @@ class STGCN(nn.Module):
             self,
             in_channels: int = 3,
             num_class: int = 17,
-            num_stgcn_blocks: int = 2,
-            hidden_channels: int = 32,
+            hidden_channels: int = 64,
             graph_nodes: int = 8,
-            use_augmentation: bool = True,
-            dropout_rate: float = 0.3,
-            spatial_dropout: float = 0.2
+            use_augmentation: bool = True
     ):
         super(STGCN, self).__init__()
 
         self.use_augmentation = use_augmentation
-        self.augmenter = PoseAugmenter(rotation_range=0.2, noise_scale_factor=0.01) if use_augmentation else None
+        self.augmenter = PoseAugmenter() if use_augmentation else None
 
-        conv_blocks = []
-        spatial_conv_blocks = []
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, hidden_channels, kernel_size=1),
+            nn.BatchNorm2d(hidden_channels),
+            nn.ReLU(),
+            nn.Dropout(p=0.2)
+        )
 
-        curr_layer_in_channels = in_channels
-        curr_layer_out_channels = hidden_channels
-        self.spatial_dropout = nn.Dropout2d(p=spatial_dropout)
-
-        for _ in range(num_stgcn_blocks):
-            conv = nn.Sequential(
-                nn.Conv2d(curr_layer_in_channels, curr_layer_out_channels, kernel_size=1),
-                nn.BatchNorm2d(curr_layer_out_channels),
-                nn.ReLU(),
-                nn.Dropout(p=dropout_rate),
-                nn.LayerNorm([curr_layer_out_channels, graph_nodes, graph_nodes])
-            )
-            conv_blocks.append(conv)
-
-            spatial_conv = SpatialGraphConv(
-                curr_layer_out_channels,
-                curr_layer_out_channels * 2,
-                graph_nodes
-            )
-            spatial_conv_blocks.append(spatial_conv)
-
-            curr_layer_in_channels = curr_layer_out_channels * 2
-            curr_layer_out_channels = curr_layer_in_channels * 2
-
-        self.conv_blocks = nn.ModuleList(conv_blocks)
-        self.spatial_conv_blocks = nn.ModuleList(spatial_conv_blocks)
+        self.spatial_conv = SpatialGraphConv(
+            hidden_channels,
+            hidden_channels * 2,
+            graph_nodes
+        )
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Dropout(p=0.5),
-            nn.Linear(curr_layer_in_channels, curr_layer_in_channels // 2),
-            nn.ReLU(),
-            nn.Dropout(p=0.5),
-            nn.Linear(curr_layer_in_channels // 2, num_class),
+            nn.Linear(hidden_channels * 2, num_class)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.training and self.use_augmentation:
-            x = self.augmenter.run(x, run_horizontal_flip=True)
+            x = self.augmenter.run(x)
 
         N, T, V, C = x.size()
         x = x.permute(0, 3, 1, 2)
-        x = self.spatial_dropout(x)
 
-        for conv, spatial_conv in zip(self.conv_blocks, self.spatial_conv_blocks):
-            x = conv(x)
-            x = spatial_conv(x)
+        x = self.conv1(x)
+        x = self.spatial_conv(x)
+        out = self.classifier(x)
 
-        return self.classifier(x)
-
+        return out
 
 
 def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, config: Dict,
                 device: str = 'cpu') -> None:
-    """Train the model and track metrics with wandb."""
     run = wandb.init(
         project="stgcn-classification",
         config=config,
@@ -163,6 +137,7 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
+
     scheduler = ReduceLROnPlateau(
         optimizer,
         mode='max',
@@ -247,7 +222,6 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
 
 
 def run_training():
-    """Initialize and run the training process."""
     torch.manual_seed(42)
     np.random.seed(42)
     wandb.login()
@@ -257,10 +231,6 @@ def run_training():
     label_map = {label: idx for idx, label in enumerate(sorted(unique_labels))}
     df['exercise'] = df['exercise'].map(label_map)
     num_classes = len(unique_labels)
-
-    print(f"Original exercise labels: {sorted(unique_labels)}")
-    print(f"Number of classes: {num_classes}")
-    print(f"Label mapping: {label_map}")
 
     train_loader, val_loader = prepare_dataloaders(
         df=df,
