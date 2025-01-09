@@ -40,8 +40,8 @@ def create_sequences(df: pd.DataFrame, window_size: int = 64, stride: int = 32) 
 
 
 def prepare_dataloaders(df: pd.DataFrame,
-                       window_size: int = 64,
-                       stride: int = 32,
+                       window_size: int = 32,
+                       stride: int = 16,
                        batch_size: int = 32,
                        test_size: float = 0.2,
                        num_workers: int = 2) -> Tuple[DataLoader, DataLoader]:
