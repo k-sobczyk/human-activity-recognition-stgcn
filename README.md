@@ -20,3 +20,35 @@ To better understand the sequence creation process, consider a 10-second exercis
 
 ## Results Summary
 
+              precision    recall  f1-score   support
+
+    Class -1       0.00      0.00      0.00         0
+     Class 0       0.82      0.69      0.75        13
+     Class 1       0.74      1.00      0.85        14
+     Class 2       1.00      1.00      1.00         1
+     Class 3       1.00      0.50      0.67         2
+     Class 4       1.00      1.00      1.00         2
+     Class 5       1.00      1.00      1.00         2
+     Class 6       1.00      1.00      1.00         1
+     Class 7       1.00      1.00      1.00         2
+     Class 8       1.00      1.00      1.00         2
+     Class 9       0.00      0.00      0.00         2
+    Class 10       1.00      1.00      1.00         2
+    Class 11       0.67      1.00      0.80         2
+    Class 12       1.00      1.00      1.00         2
+    Class 13       0.67      1.00      0.80         2
+    Class 14       0.00      0.00      0.00         2
+    Class 15       1.00      1.00      1.00         2
+
+    accuracy                           0.83        53
+    macro avg      0.76      0.78      0.76        53
+    weighted avg   0.79      0.83      0.80        53
+
+Model osiągnął **dokładność** (accuracy) na poziomie **83%**.\
+Precyzja (precision) oraz czułość (recall) w większości klas są wysokie, a F1-score dla wielu klas ma wartość 1.00.\
+W kilku klasach (np. -1, 9, 14) wartości precyzji, recall i F1-score są równe 0.00, co oznacza, że model nie przewidział żadnych przykładów dla tych klas. Warto zwrócić uwagę, że te klasy mają tylko 1 lub 2 próbki w zbiorze testowym, co może tłumaczyć ten wynik. Takie klasy mogą być trudne do przewidzenia z powodu niewielkiej reprezentacji.\
+Średnie wartości precision (0.76), recall (0.78) i F1-score (0.76) wskazują na dobry balans wydajności modelu we wszystkich klasach.\
+Średnie ważone są wyższe, odpowiednio 0.79, 0.83, 0.80, co naturalnie wskazuje, że model lepiej przewiduje klasy, które występują częściej w zbiorze danych.
+
+Model osiąga wysoką efektywność, zwłaszcza w przypadku klas, które występują częściej w zbiorze danych.\
+W celu poprawy wyników należałoby zwiększyć reprezentację klas o niskiej liczbie próbek. Można również rozważyć wagowanie klas w procesie treningu, aby model przywiązywał większą wagę do klas rzadziej reprezentowanych.
