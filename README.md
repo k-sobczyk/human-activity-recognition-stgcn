@@ -44,11 +44,8 @@ To better understand the sequence creation process, consider a 10-second exercis
     macro avg      0.76      0.78      0.76        53
     weighted avg   0.79      0.83      0.80        53
 
-Model osiągnął **dokładność** (accuracy) na poziomie **83%**.\
-Precyzja (precision) oraz czułość (recall) w większości klas są wysokie, a F1-score dla wielu klas ma wartość 1.00.\
-W kilku klasach (np. -1, 9, 14) wartości precyzji, recall i F1-score są równe 0.00, co oznacza, że model nie przewidział żadnych przykładów dla tych klas. Warto zwrócić uwagę, że te klasy mają tylko 1 lub 2 próbki w zbiorze testowym, co może tłumaczyć ten wynik. Takie klasy mogą być trudne do przewidzenia z powodu niewielkiej reprezentacji.\
-Średnie wartości precision (0.76), recall (0.78) i F1-score (0.76) wskazują na dobry balans wydajności modelu we wszystkich klasach.\
-Średnie ważone są wyższe, odpowiednio 0.79, 0.83, 0.80, co naturalnie wskazuje, że model lepiej przewiduje klasy, które występują częściej w zbiorze danych.
+The model achieved an **accuracy** of **83%**. \
+Precision and recall are high for most classes, with F1-scores of 1.00 for many classes. In a few classes (e.g., -1, 9, 14), precision, recall, and F1-score are all 0.00, indicating that the model did not predict any examples for these classes. It is important to note that these classes only have 1 or 2 samples in the test set, which may explain this result. These classes could be difficult to predict due to their limited representation. \
+The average **precision** (0.76), **recall** (0.78), and **F1-score** (0.76) indicate a good balance in the model's performance across all classes. The weighted averages are higher, at 0.79, 0.83, and 0.80 respectively, which naturally suggests that the model performs better on classes that appear more frequently in the dataset.
 
-Model osiąga wysoką efektywność, zwłaszcza w przypadku klas, które występują częściej w zbiorze danych.\
-W celu poprawy wyników należałoby zwiększyć reprezentację klas o niskiej liczbie próbek. Można również rozważyć wagowanie klas w procesie treningu, aby model przywiązywał większą wagę do klas rzadziej reprezentowanych.
+The model demonstrates high efficiency, especially for classes that appear more frequently in the dataset. To improve the results, increasing the representation of classes with fewer samples should be considered. Additionally, class weighting during training could be explored to make the model pay more attention to underrepresented classes.
