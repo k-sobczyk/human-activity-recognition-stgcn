@@ -1,12 +1,14 @@
+from datetime import datetime
+from typing import Dict
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import wandb
-import pandas as pd
-import numpy as np
-from typing import Dict
-from datetime import datetime
-from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
+
 from src.data_loader import prepare_dataloaders
 
 
@@ -127,12 +129,13 @@ class STGCN(nn.Module):
 
 
 def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, config: Dict,
-                device: str = 'cpu') -> None:
-    run = wandb.init(
-        project="stgcn-classification",
-        config=config,
-        name=f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    )
+        device: str = 'cpu', use_wandb: bool = True) -> None:
+    if use_wandb:
+        run = wandb.init(
+            project="stgcn-exercise-classification",
+            config=config,
+            name=f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
 
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
@@ -147,7 +150,8 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
         min_lr=1e-6
     )
 
-    wandb.watch(model, criterion, log="all", log_freq=10)
+    if use_wandb:
+        wandb.watch(model, criterion, log="all", log_freq=10)
 
     best_val_acc = 0.0
     early_stopping_counter = 0
@@ -194,14 +198,15 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
         scheduler.step(val_accuracy)
         current_lr = optimizer.param_groups[0]['lr']
 
-        wandb.log({
-            'epoch': epoch,
-            'train_loss': train_loss / len(train_loader),
-            'train_accuracy': train_accuracy,
-            'val_loss': val_loss / len(val_loader),
-            'val_accuracy': val_accuracy,
-            'learning_rate': current_lr
-        })
+        if use_wandb:
+            wandb.log({
+                'epoch': epoch,
+                'train_loss': train_loss / len(train_loader),
+                'train_accuracy': train_accuracy,
+                'val_loss': val_loss / len(val_loader),
+                'val_accuracy': val_accuracy,
+                'learning_rate': current_lr
+            })
 
         if val_accuracy > best_val_acc:
             best_val_acc = val_accuracy
@@ -218,13 +223,16 @@ def train_model(model: nn.Module, train_loader: DataLoader, val_loader: DataLoad
         print(f'Val Loss: {val_loss / len(val_loader):.4f} | Accuracy: {val_accuracy:.4f}')
         print('-' * 40)
 
-    wandb.finish()
+    if use_wandb:
+        wandb.finish()
 
 
-def run_training():
+def run_training(use_wandb: bool = True):
     torch.manual_seed(42)
     np.random.seed(42)
-    wandb.login()
+
+    if use_wandb:
+        wandb.login()
 
     df = pd.read_csv('../../data/data_for_model.csv')
     unique_labels = df['exercise'].unique()
@@ -262,11 +270,12 @@ def run_training():
         train_loader=train_loader,
         val_loader=val_loader,
         config=config,
-        device='cpu'
+        device='cpu',
+        use_wandb=use_wandb
     )
 
-    return model
+    return model, val_loader
 
 
 if __name__ == "__main__":
-    run_training()
+    run_training(use_wandb=False)
