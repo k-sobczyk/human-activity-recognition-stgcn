@@ -18,6 +18,38 @@ The data is handled through PyTorch's DataLoader, which provides efficient batch
 ### Practical Example
 To better understand the sequence creation process, consider a 10-second exercise video recorded at 30 FPS (frames per second), resulting in 300 frames total. With our sliding window configuration (window_size=64 and stride=32), each sequence captures approximately 2.1 seconds of motion (64/30 ≈ 2.1s). The stride of 32 means each new sequence starts halfway through the previous one, creating overlapping windows that ensure smooth motion capture and no missing transitions. This approach transforms our 10-second video into roughly 8 distinct but overlapping sequences, each providing the model with a comprehensive view of the exercise motion while maintaining temporal continuity.
 
+## Training Parameters
+
+- **window_size=64** – Defines the length of the input sequence for the model, determining how much past data is used for predictions.
+- **stride=32** – Controls the step size when creating overlapping sequences from the dataset, influencing the number of training samples.
+- **batch_size=32** – Specifies the number of samples per batch during training, affecting memory usage and model convergence speed.
+- **use_augmentation=True** – Enables data augmentation techniques to enhance model generalization and robustness.
+- **test_size=0.2** – Indicates that 20% of the dataset is reserved for validation, ensuring proper performance evaluation.
+- **hidden_channels=64** – Sets the number of hidden units in the model, impacting its capacity to learn complex patterns.
+- **graph_nodes=8** – Defines the number of nodes in the graph structure, relevant for spatiotemporal graph-based learning.
+- **learning_rate=0.001** – Determines the step size for updating model weights, influencing training speed and stability.
+- **epochs=100** – Specifies the number of complete passes through the training dataset, affecting model convergence.
+
+## Dateset
+We used the dataset which contains 3D positional data of key body joints captured during 16 diffrent exercises. It is designed for tasks such as human activity recognition, pose estimation, and motion analysis.
+
+### Data Structure
+Each row represents a single timestamp, with columns corresponding to the x, y, and z coordinates of specific joints:
+- Joints Tracked:
+    - Left Side: Elbow, Hip, Shoulder, Wrist
+    - Right Side: Elbow, Hip, Shoulder, Wrist
+- Coordinate System:
+    - _x – X-axis position
+    - _y – Y-axis position
+    - _z – Z-axis position
+- Exercise Label:
+    - The final column (exercise) represents the performed exercise, which can be used for classification. The -1 label means that the actor is not doing any exercise. Other labels refer to specific exercices.
+### Example data
+LEFT_ELBOW_x | LEFT_HIP_x |LEFT_SHOULDER_x | LEFT_WRIST_x |...| RIGHT_WRIST_z | exercise
+--- | --- | --- | --- |--- |--- |--- 
+0.4943 | 0.4354 | 0.4620 | 0.4922 | ... | -0.3369 | -1
+0.4920 | 0.4354 | 0.4623 | 0.4919 |... | -0.3182 | 2
+
 ## Results Summary
 
     accuracy                           0.83        53
