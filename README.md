@@ -20,26 +20,6 @@ To better understand the sequence creation process, consider a 10-second exercis
 
 ## Results Summary
 
-              precision    recall  f1-score   support
-
-    Class -1       0.00      0.00      0.00         0
-     Class 0       0.82      0.69      0.75        13
-     Class 1       0.74      1.00      0.85        14
-     Class 2       1.00      1.00      1.00         1
-     Class 3       1.00      0.50      0.67         2
-     Class 4       1.00      1.00      1.00         2
-     Class 5       1.00      1.00      1.00         2
-     Class 6       1.00      1.00      1.00         1
-     Class 7       1.00      1.00      1.00         2
-     Class 8       1.00      1.00      1.00         2
-     Class 9       0.00      0.00      0.00         2
-    Class 10       1.00      1.00      1.00         2
-    Class 11       0.67      1.00      0.80         2
-    Class 12       1.00      1.00      1.00         2
-    Class 13       0.67      1.00      0.80         2
-    Class 14       0.00      0.00      0.00         2
-    Class 15       1.00      1.00      1.00         2
-
     accuracy                           0.83        53
     macro avg      0.76      0.78      0.76        53
     weighted avg   0.79      0.83      0.80        53
@@ -51,12 +31,17 @@ The average **precision** (0.76), **recall** (0.78), and **F1-score** (0.76) ind
 The model demonstrates high efficiency, especially for classes that appear more frequently in the dataset. To improve the results, increasing the representation of classes with fewer samples should be considered. Additionally, class weighting during training could be explored to make the model pay more attention to underrepresented classes.
 
 ## Running Instructions
+
 To run the project, follow these steps:
+
 1. Install the required libraries:
 pip install -r requirements.txt
+
 2. Run the data-exploration.ipynb notebook to explore and save data
 for the model.
+
 3. Run the model training by executing the st_gcn.py script.
+
 By default, training logs are tracked using Weights & Biases (wandb):
 ```console
 python src/model/st_gcn.py
