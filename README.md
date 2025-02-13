@@ -24,7 +24,10 @@ To better understand the sequence creation process, consider a 10-second exercis
     macro avg      0.76      0.78      0.76        53
     weighted avg   0.79      0.83      0.80        53
 
-The model achieved an **accuracy** of **83%**. \
+![img.png](docs/wandb_results.png)
+
+The model achieved an **val accuracy** of **86.79%**. (train accuracy 76.42%)
+
 Precision and recall are high for most classes, with F1-scores of 1.00 for many classes. In a few classes (e.g., -1, 9, 14), precision, recall, and F1-score are all 0.00, indicating that the model did not predict any examples for these classes. It is important to note that these classes only have 1 or 2 samples in the test set, which may explain this result. These classes could be difficult to predict due to their limited representation. \
 The average **precision** (0.76), **recall** (0.78), and **F1-score** (0.76) indicate a good balance in the model's performance across all classes. The weighted averages are higher, at 0.79, 0.83, and 0.80 respectively, which naturally suggests that the model performs better on classes that appear more frequently in the dataset.
 
