@@ -49,3 +49,20 @@ Precision and recall are high for most classes, with F1-scores of 1.00 for many 
 The average **precision** (0.76), **recall** (0.78), and **F1-score** (0.76) indicate a good balance in the model's performance across all classes. The weighted averages are higher, at 0.79, 0.83, and 0.80 respectively, which naturally suggests that the model performs better on classes that appear more frequently in the dataset.
 
 The model demonstrates high efficiency, especially for classes that appear more frequently in the dataset. To improve the results, increasing the representation of classes with fewer samples should be considered. Additionally, class weighting during training could be explored to make the model pay more attention to underrepresented classes.
+
+## Running Instructions
+To run the project, follow these steps:
+1. Install the required libraries:
+pip install -r requirements.txt
+2. Run the data-exploration.ipynb notebook to explore and save data
+for the model.
+3. Run the model training by executing the st_gcn.py script.
+By default, training logs are tracked using Weights & Biases (wandb):
+```console
+python src/model/st_gcn.py
+```
+
+To disable wandb logging, run:
+```console
+python src/model/st_gcn.py --use_wandb=False
+```
