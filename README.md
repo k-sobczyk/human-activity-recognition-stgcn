@@ -33,6 +33,8 @@ To better understand the sequence creation process, consider a 10-second exercis
 ## Dateset
 We used the dataset which contains 3D positional data of key body joints captured during 16 diffrent exercises. It is designed for tasks such as human activity recognition, pose estimation, and motion analysis.
 
+We downloaded dataset from **CV24/Proj_02/Tematy projektów (Upel)**, and used them in project as landmark.csv and labels.csv.
+
 ### Data Structure
 Each row represents a single timestamp, with columns corresponding to the x, y, and z coordinates of specific joints:
 - Joints Tracked:
